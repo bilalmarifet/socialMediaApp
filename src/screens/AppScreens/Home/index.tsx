@@ -1,16 +1,19 @@
 import React, { Component } from "react";
-import { View, FlatList, ActivityIndicator,Button } from "react-native";
+import { View, FlatList, ActivityIndicator,Button,Text} from "react-native";
 import { NavigationScreenProp, NavigationState, SafeAreaView } from "react-navigation";
 import { connect } from "react-redux";
 import { Header } from "../../../components";
 import styles from "./styles";
 import { AvatarItem } from "../../../components";
 import { logoutUserService } from "../../../redux/services/user";
-import {Thumbnail} from 'native-base'
+import {Thumbnail,Icon} from 'native-base'
 import {
   fetchImageData,
   fetchMoreImageData
 } from "../../../redux/actions/fetch";
+import { TouchableOpacity } from "react-native-gesture-handler";
+import { showMessage } from "react-native-flash-message";
+import { colors } from "../../../constants";
 
 interface Props {
   navigation: NavigationScreenProp<NavigationState>;
@@ -27,6 +30,7 @@ interface itemProp {
 interface State {
   page: number;
   limit: number;
+  change :boolean;
 }
 
 class Home extends Component<Props, State> {
@@ -34,7 +38,8 @@ class Home extends Component<Props, State> {
     super(props);
     this.state = {
       page: 1,
-      limit: 20
+      limit: 20,
+      change : false,
     };
   }
 
@@ -42,6 +47,7 @@ class Home extends Component<Props, State> {
     const { fetchImageData } = this.props;
     const { page, limit } = this.state;
     fetchImageData(page, limit);
+    // this.props.navigation.setParams({cart: 1});
   }
 
   handleLogout = () => {
@@ -51,49 +57,79 @@ class Home extends Component<Props, State> {
     });
   };
 
-  static navigationOptions = {
-    title: 'Ana Sayfa',
+  static navigationOptions = ({navigation }) => {
+
+   return {
+    title: 'Ürünler',
     headerStyle: {
-      height: 80
+      height: 70
     },
-    headerLeft:  <Thumbnail style={{width:40,height:40,borderRadius:5}}  source={{uri: 'https://www.billboard.com/files/styles/article_main_image/public/media/katy-perry-oct-2019-billboard-1548.jpg'}} />,
+  headerRight: 
+  (navigation.state.params && navigation.state.params.cart ) ? <TouchableOpacity style={{borderWidth:1,borderRadius:5,padding:5,flexDirection:'row',marginRight:10}}><Icon name="cart"></Icon>
   
-
-    headerRight: <Button title='About' onPress={() => props.navigation.navigate('Options')} />
-
-
+  <Text style={{alignSelf:'center',marginLeft:10}}>{navigation.state.params.cart} TL</Text>
+   
+  </TouchableOpacity> : null
+   }
   };
+  renderPlusButton(){
+    showMessage({
+      message: "Hello World",
+      description: "This is our second message",
+      type: "success",
+    });
+    if(this.state.change) {
+      let cart = this.props.navigation.getParam('cart') ?? 0
+      return (
+        <View >
+        <View style={{borderWidth:1,flexDirection:'row'}}>
+          <TouchableOpacity onPress={()=> {
+             this.props.navigation.setParams({cart: cart - 100});
+            this.setState({change : !this.state.change})}}><Icon name="minus" type="MaterialCommunityIcons" /></TouchableOpacity>
+          <Text style={{alignSelf:'center'}}>{this.state.page}</Text>
+          <TouchableOpacity onPress={()=>{
+            this.props.navigation.setParams({cart: cart + 100});
+            this.setState({page:this.state.page + 1})}}><Icon name="plus" type="MaterialCommunityIcons" /></TouchableOpacity>
+          </View> 
+       </View>
+      )
+    }
+    else {
+      let cart = this.props.navigation.getParam('cart') ?? 0
+      return (
+        <TouchableOpacity onPress={()=> {
+          this.props.navigation.setParams({cart: cart + 100});
+          this.setState({change : !this.state.change})}}>
+<Icon name="ios-add-circle" style={{color : colors.accent}}/>
+       </TouchableOpacity>
+      )
+    }
+  }
 
   render() {
     const { navigation, imageData, fetchMoreImageData, loading } = this.props;
     const { page, limit } = this.state;
     return (
       <View style={styles.container}>
-        {/* <Header
-          title="Home"
-          leftButtonPress={() => navigation.openDrawer()}
-          rightButtonPress={() => this.handleLogout()}
-        /> */}
-        
+       
+      
         <FlatList
-          data={imageData}
+        contentContainerStyle={{paddingTop:20}}
+          data={[1,2,2,2]}
+
           keyExtractor={item => item.id}
           renderItem={({ item }: itemProp) => {
             return (
-              <AvatarItem avatar={item.download_url} title={item.author} />
+             <View style={{marginHorizontal:10,borderWidth:1,padding:10,borderRadius:5,justifyContent:'space-between',flexDirection:'row',marginBottom:10}}>
+               <Text style={{alignSelf:'center'}}>
+                 Damacana Su
+               </Text>
+
+              {this.renderPlusButton()}
+               </View>
             );
           }}
-          onEndReached={() => {
-            this.setState({ page: page + 1 });
-            fetchMoreImageData(page + 1, limit);
-          }}
-          ListFooterComponent={
-            loading ? (
-              <View style={styles.loadingFooter}>
-                <ActivityIndicator />
-              </View>
-            ) : null
-          }
+          
         />
       </View>
     );
